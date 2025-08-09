@@ -11,6 +11,7 @@ import {
   BackHandler,
   ScrollView,
 } from "react-native";
+import { StatusBar } from 'expo-status-bar';
 import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
 
@@ -476,11 +477,18 @@ export default function App() {
   if (gameMode === 'selection') {
     return (
       <View style={styles.selectionContainer}>
+        <StatusBar hidden />
         <TouchableOpacity style={styles.muteButton} onPress={toggleMute}>
-          <Text style={styles.muteButtonText}>{isMuted ? '🔇' : '🔊'}</Text>
+          <Image 
+            source={isMuted ? require('./assets/images/muted.png') : require('./assets/images/general.png')} 
+            style={styles.muteButtonText}
+            resizeMode="contain"
+          />
         </TouchableOpacity>
         
-        <Text style={styles.selectionTitle}>Select Players</Text>
+        <View style={styles.configTitleContainer}>
+          <Text style={styles.configTitle}>Select Players</Text>
+        </View>
         
         <View style={styles.playerOptionsContainer}>
           {[2, 3, 4].map((playerCount) => (
@@ -512,15 +520,22 @@ export default function App() {
   if (gameMode === 'config') {
     return (
       <View style={styles.configScreenContainer}>
+        <StatusBar hidden />
         <TouchableOpacity style={styles.backButton} onPress={backToSelection}>
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.muteButton} onPress={toggleMute}>
-          <Text style={styles.muteButtonText}>{isMuted ? '🔇' : '🔊'}</Text>
+          <Image 
+            source={isMuted ? require('./assets/images/muted.png') : require('./assets/images/general.png')} 
+            style={styles.muteButtonText}
+            resizeMode="contain"
+          />
         </TouchableOpacity>
         
-        <Text style={styles.selectionTitle}>Configure Players</Text>
+        <View style={styles.configTitleContainer}>
+          <Text style={styles.configTitle}>Configure Players</Text>
+        </View>
         
         <ScrollView style={styles.configScrollContainer} showsVerticalScrollIndicator={true}>
           <View style={styles.configContainer}>
@@ -611,6 +626,7 @@ export default function App() {
 
   return (
     <View style={styles.container}>
+      <StatusBar hidden />
       {/* Back Button - Hidden when modal is showing */}
       {!showGameOverModal && (
         <TouchableOpacity style={styles.backButton} onPress={backToConfig}>
@@ -621,7 +637,11 @@ export default function App() {
       {/* Mute Button - Hidden when modal is showing */}
       {!showGameOverModal && (
         <TouchableOpacity style={styles.muteButton} onPress={toggleMute}>
-          <Text style={styles.muteButtonText}>{isMuted ? '🔇' : '🔊'}</Text>
+          <Image 
+            source={isMuted ? require('./assets/images/muted.png') : require('./assets/images/general.png')} 
+            style={styles.muteButtonText}
+            resizeMode="contain"
+          />
         </TouchableOpacity>
       )}
 
@@ -817,18 +837,60 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-start",
     padding: 24,
-    paddingTop: Platform.OS === 'ios' ? 100 : 80, // Extra padding for back button
+    paddingTop: 60, // Reduced padding since status bar is hidden
   },
   selectionTitle: {
-    fontSize: 36,
+    fontSize: 40,
     fontWeight: "900",
-    color: "#FFFFFF",
+    color: "#D4A574", // Minecraft wooden/brown theme color
     marginBottom: 48,
     textAlign: "center",
     fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace',
-    textShadowColor: "#000",
-    textShadowOffset: { width: 3, height: 3 },
+    textShadowColor: "#8B4513", // Dark brown shadow to match buttons
+    textShadowOffset: { width: 4, height: 4 },
     textShadowRadius: 0,
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    borderWidth: 3,
+    borderColor: "#AA5500",
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderTopColor: "#FFAA00",
+    borderLeftColor: "#FFAA00",
+    borderRightColor: "#664400",
+    borderBottomColor: "#664400",
+  },
+  configTitleContainer: {
+    alignItems: "center",
+    marginBottom: 20,
+    marginTop: 10,
+    // Add outer black border container
+    borderWidth: 2,
+    borderColor: "#000000",
+    width: "90%",
+    maxWidth: 300,
+    alignSelf: "center",
+  },
+  configTitle: {
+    fontSize: 28,
+    fontWeight: "900",
+    color: "#F4E4C1", // Light cream color to match playerOptionText
+    textAlign: "center",
+    fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace',
+    textShadowColor: "#8B4513", // Dark brown shadow
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 0,
+    letterSpacing: 1,
+    padding: 20, // Same as playerOption
+    backgroundColor: "#2F2F2F", // Same as playerOption
+    borderWidth: 6, // Same as playerOption
+    borderTopColor: "#5A5A5A",
+    borderLeftColor: "#5A5A5A",
+    borderRightColor: "#1A1A1A",
+    borderBottomColor: "#1A1A1A",
+    width: "100%", // Full width within the container
+    maxWidth: "none", // Remove maxWidth since container handles it
   },
   playerOptionsContainer: {
     width: "100%",
@@ -850,10 +912,10 @@ const styles = StyleSheet.create({
   playerOptionText: {
     fontSize: 24,
     fontWeight: "900",
-    color: "#FFFFFF",
+    color: "#F4E4C1", // Light cream color to match Minecraft theme
     marginBottom: 16,
     fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace',
-    textShadowColor: "#000",
+    textShadowColor: "#8B4513", // Dark brown shadow
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 0,
   },
@@ -890,11 +952,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 24,
-    paddingTop: Platform.OS === 'ios' ? 100 : 80, // Extra padding for back button
+    paddingTop: 60, // Reduced padding since status bar is hidden
   },
   backButton: {
     position: "absolute",
-    top: Platform.OS === 'ios' ? 50 : 30,
+    top: 20, // Reduced top position since status bar is hidden
     left: 20,
     backgroundColor: "#8B4513",
     paddingVertical: 8,
@@ -914,7 +976,7 @@ const styles = StyleSheet.create({
   },
   muteButton: {
     position: "absolute",
-    top: Platform.OS === 'ios' ? 50 : 30,
+    top: 20, // Reduced top position since status bar is hidden
     right: 20,
     backgroundColor: "#8B4513",
     paddingVertical: 8,
@@ -927,8 +989,8 @@ const styles = StyleSheet.create({
     zIndex: 1000, // Ensure it's above other elements
   },
   muteButtonText: {
-    fontSize: 18,
-    textAlign: "center",
+    width: 18,
+    height: 18,
   },
   currentPlayerContainer: {
     flexDirection: "row",
