@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Tic Tac Toe and More",
-    "slug": "tictactoe-and-more",
+    "slug": "TicTacToe",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -36,18 +36,19 @@
     },
     "description": "A modern, multi-player Tic-Tac-Toe game with Minecraft-inspired pixelated design, AI opponents with multiple difficulty levels, immersive sound effects, and support for 2-4 players on dynamic grid sizes.",
     "keywords": [
-      "tic-tac-toe", 
-      "minecraft", 
-      "multiplayer", 
-      "ai", 
-      "game", 
-      "puzzle", 
-      "strategy", 
-      "pixelated", 
-      "react-native", 
+      "tic-tac-toe",
+      "minecraft",
+      "multiplayer",
+      "ai",
+      "game",
+      "puzzle",
+      "strategy",
+      "pixelated",
+      "react-native",
       "expo"
     ],
     "githubUrl": "https://github.com/theadhithyankr/Tic-Tac-Toe",
-    "privacy": "public"
+    "privacy": "public",
+    "owner": "teacoderx"
   }
 }

@@ -149,19 +149,19 @@ export default function App() {
   // Base player configurations
   const basePlayerConfigs = {
     2: [
-      { symbol: 'X', color: '#3F7FBF', name: 'Player 1', image: require('./x.png') },
-      { symbol: 'O', color: '#BF3F3F', name: 'Player 2', image: require('./o.png') }
+      { symbol: 'X', color: '#3F7FBF', name: 'Player 1', image: require('./assets/images/x.png') },
+      { symbol: 'O', color: '#BF3F3F', name: 'Player 2', image: require('./assets/images/o.png') }
     ],
     3: [
-      { symbol: 'X', color: '#3F7FBF', name: 'Player 1', image: require('./x.png') },
-      { symbol: 'O', color: '#BF3F3F', name: 'Player 2', image: require('./o.png') },
-      { symbol: '□', color: '#2D5A2D', name: 'Player 3', image: require('./square.png') }
+      { symbol: 'X', color: '#3F7FBF', name: 'Player 1', image: require('./assets/images/x.png') },
+      { symbol: 'O', color: '#BF3F3F', name: 'Player 2', image: require('./assets/images/o.png') },
+      { symbol: '□', color: '#2D5A2D', name: 'Player 3', image: require('./assets/images/square.png') }
     ],
     4: [
-      { symbol: 'X', color: '#3F7FBF', name: 'Player 1', image: require('./x.png') },
-      { symbol: 'O', color: '#BF3F3F', name: 'Player 2', image: require('./o.png') },
-      { symbol: '□', color: '#2D5A2D', name: 'Player 3', image: require('./square.png') },
-      { symbol: '△', color: '#D4AF37', name: 'Player 4', image: require('./triangle.png') }
+      { symbol: 'X', color: '#3F7FBF', name: 'Player 1', image: require('./assets/images/x.png') },
+      { symbol: 'O', color: '#BF3F3F', name: 'Player 2', image: require('./assets/images/o.png') },
+      { symbol: '□', color: '#2D5A2D', name: 'Player 3', image: require('./assets/images/square.png') },
+      { symbol: '△', color: '#D4AF37', name: 'Player 4', image: require('./assets/images/triangle.png') }
     ]
   };
 
