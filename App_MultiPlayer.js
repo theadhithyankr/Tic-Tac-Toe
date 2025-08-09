@@ -482,25 +482,32 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    backgroundColor: "transparent", // Remove dark background
-    borderWidth: 0, // Remove border completely
-    padding: 0, // Removed padding for uniform spacing
+    backgroundColor: "#2F2F2F",
+    borderWidth: 8,
+    borderTopColor: "#5A5A5A",
+    borderLeftColor: "#5A5A5A",
+    borderRightColor: "#1A1A1A",
+    borderBottomColor: "#1A1A1A",
+    padding: 8,
     marginBottom: 30,
-    alignSelf: "center", // Center the grid horizontally
-    justifyContent: "center", // Center content within grid
   },
   cell: {
     backgroundColor: "#4A4A4A",
-    borderWidth: 2, // Made uniform and thinner
-    borderColor: "#6A6A6A", // Single uniform border
+    borderWidth: 4,
+    borderTopColor: "#6A6A6A",
+    borderLeftColor: "#6A6A6A",
+    borderRightColor: "#2A2A2A",
+    borderBottomColor: "#2A2A2A",
     justifyContent: "center",
     alignItems: "center",
-    margin: 0, // Removed margin for uniform spacing
+    margin: 2,
   },
   winCell: {
     backgroundColor: "#D4AF37",
-    borderWidth: 3, // Uniform border for winning cells
-    borderColor: "#F4CF57", // Single uniform gold border
+    borderTopColor: "#F4CF57",
+    borderLeftColor: "#F4CF57",
+    borderRightColor: "#B48F17",
+    borderBottomColor: "#B48F17",
   },
   cellImage: {
     width: 40,
