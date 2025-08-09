@@ -1,6 +1,0 @@
-// Simple colored square - 64x64 pixels
-// This is a placeholder until you provide the actual square.png
-// You can replace this with your custom square image
-
-// For now, we'll use text-based symbols in the code
-// □ and △ symbols will be rendered as text until images are provided

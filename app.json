@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "XOX Game",
-    "slug": "xox-game",
+    "name": "Minecraft Tic-Tac-Toe",
+    "slug": "minecraft-tictactoe",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,29 +10,44 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0f172a"
+      "backgroundColor": "#4A4A4A"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.teacoderx.xoxgame"
+      "bundleIdentifier": "com.adhithyankr.minecrafttictactoe"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0f172a"
+        "backgroundColor": "#4A4A4A"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.teacoderx.xoxgame"
+      "package": "com.adhithyankr.minecrafttictactoe"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "Minecraft Tic-Tac-Toe",
+      "shortName": "MTicTacToe"
     },
     "extra": {
       "eas": {
         "projectId": "b00c8a6d-9e04-47f8-b290-52e61845b196"
       }
     },
-    "description": "A modern Tic-Tac-Toe game with animated UI and custom graphics",
-    "keywords": ["game", "tic-tac-toe", "xox", "puzzle", "strategy"]
+    "description": "A modern, multi-player Tic-Tac-Toe game with Minecraft-inspired pixelated design, AI opponents with multiple difficulty levels, immersive sound effects, and support for 2-4 players on dynamic grid sizes.",
+    "keywords": [
+      "tic-tac-toe", 
+      "minecraft", 
+      "multiplayer", 
+      "ai", 
+      "game", 
+      "puzzle", 
+      "strategy", 
+      "pixelated", 
+      "react-native", 
+      "expo"
+    ],
+    "githubUrl": "https://github.com/theadhithyankr/Tic-Tac-Toe",
+    "privacy": "public"
   }
 }

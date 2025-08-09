@@ -1,22 +1,51 @@
 {
-  "name": "tictactoe",
+  "name": "minecraft-tictactoe",
   "version": "1.0.0",
+  "description": "A modern, multi-player Tic-Tac-Toe game with Minecraft-inspired design, AI opponents, and immersive sound effects",
   "main": "index.js",
+  "keywords": [
+    "tic-tac-toe",
+    "react-native",
+    "expo",
+    "game",
+    "minecraft",
+    "multiplayer",
+    "ai",
+    "mobile"
+  ],
+  "author": {
+    "name": "Adhithyan K R",
+    "url": "https://github.com/theadhithyankr"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/theadhithyankr/Tic-Tac-Toe.git"
+  },
+  "bugs": {
+    "url": "https://github.com/theadhithyankr/Tic-Tac-Toe/issues"
+  },
+  "homepage": "https://github.com/theadhithyankr/Tic-Tac-Toe#readme",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "build:android": "expo build:android",
+    "build:ios": "expo build:ios",
+    "eject": "expo eject"
   },
   "dependencies": {
     "expo": "~53.0.20",
     "expo-status-bar": "~2.2.3",
     "react": "19.0.0",
     "react-native": "0.79.5",
-    "expo-dev-client": "~5.2.4"
+    "expo-dev-client": "~5.2.4",
+    "expo-av": "~15.1.7",
+    "expo-haptics": "~14.1.4"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"
   },
-  "private": true
+  "private": false
 }

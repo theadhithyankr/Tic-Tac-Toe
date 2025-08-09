@@ -9,18 +9,145 @@ import {
   Image,
   Platform,
 } from "react-native";
+import { Audio } from 'expo-av';
+import * as Haptics from 'expo-haptics';
 
 export default function App() {
   // Game states
-  const [gameMode, setGameMode] = useState('selection'); // 'selection' or 'playing'
+  const [gameMode, setGameMode] = useState('selection'); // 'selection', 'config', or 'playing'
   const [numPlayers, setNumPlayers] = useState(2);
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   const [board, setBoard] = useState([]);
   const [winnerInfo, setWinnerInfo] = useState(null);
   const [showGameOverModal, setShowGameOverModal] = useState(false);
   
-  // Player configurations
-  const playerConfigs = {
+  // Player configurations with AI settings
+  const [playerSettings, setPlayerSettings] = useState({});
+  
+  // Sound objects
+  const [sounds, setSounds] = useState({});
+  
+  // Initialize sounds
+  useEffect(() => {
+    const initializeSounds = async () => {
+      try {
+        // Enable audio session
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          staysActiveInBackground: false,
+          playsInSilentModeIOS: true,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false,
+        });
+      } catch (error) {
+        console.log('Error initializing audio:', error);
+      }
+    };
+
+    initializeSounds();
+  }, []);
+
+  // Play sound function using system sounds or simple beeps
+  const playSound = async (soundType) => {
+    try {
+      // Add haptic feedback for mobile devices
+      if (Platform.OS !== 'web') {
+        switch (soundType) {
+          case 'move':
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            break;
+          case 'win':
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            break;
+          case 'draw':
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+            break;
+          case 'click':
+            await Haptics.selectionAsync();
+            break;
+        }
+      }
+      
+      // Simple beep implementation for different actions
+      if (Platform.OS === 'web') {
+        // For web, create audio context beeps
+        try {
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          let frequency;
+          let duration;
+          
+          switch (soundType) {
+            case 'move':
+              frequency = 800;
+              duration = 0.1;
+              break;
+            case 'win':
+              frequency = 1200;
+              duration = 0.3;
+              break;
+            case 'draw':
+              frequency = 400;
+              duration = 0.2;
+              break;
+            case 'click':
+              frequency = 600;
+              duration = 0.05;
+              break;
+            default:
+              frequency = 600;
+              duration = 0.1;
+          }
+          
+          oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+          gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+          
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + duration);
+          
+        } catch (webError) {
+          console.log('Web audio not supported:', webError);
+        }
+      } else {
+        // For mobile, try to use expo-av with simple tones
+        try {
+          const sound = new Audio.Sound();
+          
+          // Use a simple data URI for a beep
+          const beepData = `data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LPeB4Ib27E7NqGMwgSdP9IjmP9Hn+p+t7t3Pq/7/6+8P9v8v/F9P/U9f/X9f/V9f/Q9P/E8v/U9f/o9v////9P`;
+          
+          await sound.loadAsync({ uri: beepData }, { shouldPlay: false });
+          await sound.setVolumeAsync(0.2);
+          await sound.playAsync();
+          
+          // Cleanup
+          setTimeout(async () => {
+            try {
+              await sound.unloadAsync();
+            } catch (cleanupError) {
+              console.log('Error cleaning up sound:', cleanupError);
+            }
+          }, 500);
+          
+        } catch (mobileError) {
+          console.log('Mobile audio not supported:', mobileError);
+        }
+      }
+      
+    } catch (error) {
+      // Completely silent fallback - just log
+      console.log(`Audio/haptic feedback unavailable for ${soundType}:`, error);
+    }
+  };
+  
+  // Base player configurations
+  const basePlayerConfigs = {
     2: [
       { symbol: 'X', color: '#3F7FBF', name: 'Player 1', image: require('./x.png') },
       { symbol: 'O', color: '#BF3F3F', name: 'Player 2', image: require('./o.png') }
@@ -43,7 +170,15 @@ export default function App() {
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
   // Get current players and grid size
-  const currentPlayers = playerConfigs[numPlayers];
+  const currentPlayers = basePlayerConfigs[numPlayers].map((player, index) => ({
+    ...player,
+    isAI: playerSettings[index]?.isAI || false,
+    aiDifficulty: playerSettings[index]?.aiDifficulty || 'medium',
+    name: playerSettings[index]?.isAI 
+      ? `AI ${player.name.split(' ')[1]} (${playerSettings[index]?.aiDifficulty})` 
+      : player.name
+  }));
+  
   const gridSize = numPlayers === 2 ? 3 : 4;
   const totalCells = gridSize * gridSize;
 
@@ -57,15 +192,168 @@ export default function App() {
     }
   }, [gameMode, numPlayers]);
 
-  // Start game with selected number of players
-  const startGame = (players) => {
+  // Initialize player settings when number of players changes
+  useEffect(() => {
+    const initialSettings = {};
+    for (let i = 0; i < numPlayers; i++) {
+      if (!playerSettings[i]) {
+        initialSettings[i] = { isAI: false, aiDifficulty: 'medium' };
+      }
+    }
+    if (Object.keys(initialSettings).length > 0) {
+      setPlayerSettings(prev => ({ ...prev, ...initialSettings }));
+    }
+  }, [numPlayers]);
+
+  // AI Move Logic
+  const makeAIMove = (board, playerSymbol, difficulty) => {
+    const emptyCells = board.map((cell, index) => cell === null ? index : null).filter(val => val !== null);
+    
+    if (emptyCells.length === 0) return null;
+
+    switch (difficulty) {
+      case 'easy':
+        // Random move
+        return emptyCells[Math.floor(Math.random() * emptyCells.length)];
+        
+      case 'medium':
+        // Try to win, then try to block, then random
+        const winMove = findWinningMove(board, playerSymbol);
+        if (winMove !== null) return winMove;
+        
+        const blockMove = findBlockingMove(board, playerSymbol);
+        if (blockMove !== null) return blockMove;
+        
+        return emptyCells[Math.floor(Math.random() * emptyCells.length)];
+        
+      case 'hard':
+        // Advanced strategy: win > block > center > corner > random
+        const winMoveHard = findWinningMove(board, playerSymbol);
+        if (winMoveHard !== null) return winMoveHard;
+        
+        const blockMoveHard = findBlockingMove(board, playerSymbol);
+        if (blockMoveHard !== null) return blockMoveHard;
+        
+        // Try center (for 3x3) or middle cells (for 4x4)
+        const centerCells = gridSize === 3 ? [4] : [5, 6, 9, 10];
+        const availableCenters = centerCells.filter(cell => emptyCells.includes(cell));
+        if (availableCenters.length > 0) {
+          return availableCenters[Math.floor(Math.random() * availableCenters.length)];
+        }
+        
+        // Try corners
+        const corners = gridSize === 3 ? [0, 2, 6, 8] : [0, 3, 12, 15];
+        const availableCorners = corners.filter(cell => emptyCells.includes(cell));
+        if (availableCorners.length > 0) {
+          return availableCorners[Math.floor(Math.random() * availableCorners.length)];
+        }
+        
+        return emptyCells[Math.floor(Math.random() * emptyCells.length)];
+        
+      default:
+        return emptyCells[Math.floor(Math.random() * emptyCells.length)];
+    }
+  };
+
+  // Find winning move
+  const findWinningMove = (board, playerSymbol) => {
+    for (let i = 0; i < board.length; i++) {
+      if (board[i] === null) {
+        const testBoard = [...board];
+        testBoard[i] = playerSymbol;
+        if (calculateWinner(testBoard, gridSize)?.winner === playerSymbol) {
+          return i;
+        }
+      }
+    }
+    return null;
+  };
+
+  // Find blocking move
+  const findBlockingMove = (board, playerSymbol) => {
+    const opponents = currentPlayers.filter(p => p.symbol !== playerSymbol);
+    
+    for (const opponent of opponents) {
+      for (let i = 0; i < board.length; i++) {
+        if (board[i] === null) {
+          const testBoard = [...board];
+          testBoard[i] = opponent.symbol;
+          if (calculateWinner(testBoard, gridSize)?.winner === opponent.symbol) {
+            return i;
+          }
+        }
+      }
+    }
+    return null;
+  };
+
+  // Handle AI move with delay
+  useEffect(() => {
+    if (gameMode === 'playing' && !winnerInfo) {
+      const currentPlayer = currentPlayers[currentPlayerIndex];
+      if (currentPlayer?.isAI) {
+        const aiMoveTimer = setTimeout(() => {
+          const aiMove = makeAIMove(board, currentPlayer.symbol, currentPlayer.aiDifficulty);
+          if (aiMove !== null) {
+            handleMove(aiMove);
+          }
+        }, 1000); // 1 second delay for AI moves
+
+        return () => clearTimeout(aiMoveTimer);
+      }
+    }
+  }, [currentPlayerIndex, board, gameMode, winnerInfo]);
+
+  // Navigate to player configuration
+  const goToPlayerConfig = (players) => {
+    playSound('click');
     setNumPlayers(players);
+    setGameMode('config');
+  };
+
+  // Toggle player type (Human/AI)
+  const togglePlayerType = (playerIndex) => {
+    playSound('click');
+    setPlayerSettings(prev => ({
+      ...prev,
+      [playerIndex]: {
+        ...prev[playerIndex],
+        isAI: !prev[playerIndex]?.isAI,
+        aiDifficulty: prev[playerIndex]?.aiDifficulty || 'medium'
+      }
+    }));
+  };
+
+  // Change AI difficulty
+  const changeAIDifficulty = (playerIndex, difficulty) => {
+    playSound('click');
+    setPlayerSettings(prev => ({
+      ...prev,
+      [playerIndex]: {
+        ...prev[playerIndex],
+        aiDifficulty: difficulty
+      }
+    }));
+  };
+
+  // Start game with configured players
+  const startGame = () => {
+    playSound('click');
     setGameMode('playing');
   };
 
   // Go back to selection
   const backToSelection = () => {
+    playSound('click');
     setGameMode('selection');
+    setWinnerInfo(null);
+    setShowGameOverModal(false);
+  };
+
+  // Go back to config
+  const backToConfig = () => {
+    playSound('click');
+    setGameMode('config');
     setWinnerInfo(null);
     setShowGameOverModal(false);
   };
@@ -73,6 +361,9 @@ export default function App() {
   // Handle move
   const handleMove = (index) => {
     if (board[index] || winnerInfo) return;
+
+    // Play move sound
+    playSound('move');
 
     const newBoard = [...board];
     const currentPlayer = currentPlayers[currentPlayerIndex];
@@ -82,6 +373,14 @@ export default function App() {
     const gameResult = calculateWinner(newBoard, gridSize);
     if (gameResult) {
       setWinnerInfo(gameResult);
+      // Play appropriate game end sound
+      setTimeout(() => {
+        if (gameResult.winner) {
+          playSound('win');
+        } else {
+          playSound('draw');
+        }
+      }, 300);
       setTimeout(() => {
         setShowGameOverModal(true);
         animateModal();
@@ -118,6 +417,7 @@ export default function App() {
 
   // Restart game
   const restartGame = () => {
+    playSound('click');
     setBoard(Array(totalCells).fill(null));
     setCurrentPlayerIndex(0);
     setWinnerInfo(null);
@@ -135,11 +435,11 @@ export default function App() {
             <TouchableOpacity
               key={playerCount}
               style={styles.playerOption}
-              onPress={() => startGame(playerCount)}
+              onPress={() => goToPlayerConfig(playerCount)}
             >
               <Text style={styles.playerOptionText}>{playerCount} Players</Text>
               <View style={styles.playerPreview}>
-                {playerConfigs[playerCount].map((player, index) => (
+                {basePlayerConfigs[playerCount].map((player, index) => (
                   <View key={index} style={styles.previewPlayer}>
                     <Image source={player.image} style={[styles.previewImage, { tintColor: player.color }]} />
                     <Text style={[styles.previewText, { color: player.color }]}>{player.symbol}</Text>
@@ -156,6 +456,93 @@ export default function App() {
     );
   }
 
+  // Player Configuration Screen
+  if (gameMode === 'config') {
+    return (
+      <View style={styles.selectionContainer}>
+        <TouchableOpacity style={styles.backButton} onPress={backToSelection}>
+          <Text style={styles.backButtonText}>← Back</Text>
+        </TouchableOpacity>
+        
+        <Text style={styles.selectionTitle}>Configure Players</Text>
+        
+        <View style={styles.configContainer}>
+          {basePlayerConfigs[numPlayers].map((player, index) => (
+            <View key={index} style={styles.playerConfigCard}>
+              <View style={styles.playerConfigHeader}>
+                <Image source={player.image} style={[styles.configPlayerImage, { tintColor: player.color }]} />
+                <Text style={[styles.configPlayerText, { color: player.color }]}>
+                  {player.name}
+                </Text>
+              </View>
+              
+              <View style={styles.playerTypeContainer}>
+                <TouchableOpacity 
+                  style={[
+                    styles.playerTypeButton,
+                    !playerSettings[index]?.isAI && styles.playerTypeButtonActive
+                  ]}
+                  onPress={() => togglePlayerType(index)}
+                >
+                  <Text style={[
+                    styles.playerTypeText,
+                    !playerSettings[index]?.isAI && styles.playerTypeTextActive
+                  ]}>
+                    Human
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[
+                    styles.playerTypeButton,
+                    playerSettings[index]?.isAI && styles.playerTypeButtonActive
+                  ]}
+                  onPress={() => togglePlayerType(index)}
+                >
+                  <Text style={[
+                    styles.playerTypeText,
+                    playerSettings[index]?.isAI && styles.playerTypeTextActive
+                  ]}>
+                    AI
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              
+              {playerSettings[index]?.isAI && (
+                <View style={styles.aiDifficultyContainer}>
+                  <Text style={styles.difficultyLabel}>AI Difficulty:</Text>
+                  <View style={styles.difficultyButtons}>
+                    {['easy', 'medium', 'hard'].map((difficulty) => (
+                      <TouchableOpacity
+                        key={difficulty}
+                        style={[
+                          styles.difficultyButton,
+                          playerSettings[index]?.aiDifficulty === difficulty && styles.difficultyButtonActive
+                        ]}
+                        onPress={() => changeAIDifficulty(index, difficulty)}
+                      >
+                        <Text style={[
+                          styles.difficultyText,
+                          playerSettings[index]?.aiDifficulty === difficulty && styles.difficultyTextActive
+                        ]}>
+                          {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </View>
+          ))}
+        </View>
+        
+        <TouchableOpacity style={styles.startGameButton} onPress={startGame}>
+          <Text style={styles.startGameText}>Start Game</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   // Game Screen
   const currentPlayer = currentPlayers[currentPlayerIndex];
   const status = winnerInfo
@@ -166,10 +553,12 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      {/* Back Button */}
-      <TouchableOpacity style={styles.backButton} onPress={backToSelection}>
-        <Text style={styles.backButtonText}>← Back</Text>
-      </TouchableOpacity>
+      {/* Back Button - Hidden when modal is showing */}
+      {!showGameOverModal && (
+        <TouchableOpacity style={styles.backButton} onPress={backToConfig}>
+          <Text style={styles.backButtonText}>← Back</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Current Player Indicator */}
       {!winnerInfo && (
@@ -661,5 +1050,114 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     textAlign: "center",
     fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace',
+  },
+
+  // Player Configuration Styles
+  configContainer: {
+    width: "100%",
+    paddingHorizontal: 20,
+  },
+  playerConfigCard: {
+    backgroundColor: "#2F2F2F",
+    borderWidth: 4,
+    borderColor: "#5A5A5A",
+    padding: 16,
+    marginBottom: 16,
+    alignItems: "center",
+  },
+  playerConfigHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  configPlayerImage: {
+    width: 40,
+    height: 40,
+    marginRight: 12,
+  },
+  configPlayerText: {
+    fontSize: 20,
+    fontWeight: "900",
+    fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace',
+  },
+  playerTypeContainer: {
+    flexDirection: "row",
+    marginBottom: 12,
+  },
+  playerTypeButton: {
+    backgroundColor: "#4A4A4A",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginHorizontal: 4,
+    borderWidth: 2,
+    borderColor: "#6A6A6A",
+  },
+  playerTypeButtonActive: {
+    backgroundColor: "#D4AF37",
+    borderColor: "#F4CF57",
+  },
+  playerTypeText: {
+    fontSize: 14,
+    fontWeight: "900",
+    color: "#FFFFFF",
+    fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace',
+  },
+  playerTypeTextActive: {
+    color: "#000000",
+  },
+  aiDifficultyContainer: {
+    alignItems: "center",
+  },
+  difficultyLabel: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#CCCCCC",
+    marginBottom: 8,
+    fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace',
+  },
+  difficultyButtons: {
+    flexDirection: "row",
+  },
+  difficultyButton: {
+    backgroundColor: "#4A4A4A",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginHorizontal: 2,
+    borderWidth: 2,
+    borderColor: "#6A6A6A",
+  },
+  difficultyButtonActive: {
+    backgroundColor: "#3F7FBF",
+    borderColor: "#5F9FDF",
+  },
+  difficultyText: {
+    fontSize: 12,
+    fontWeight: "900",
+    color: "#FFFFFF",
+    fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace',
+  },
+  difficultyTextActive: {
+    color: "#000000",
+  },
+  startGameButton: {
+    backgroundColor: "#2D5A2D",
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderWidth: 6,
+    borderTopColor: "#4A8A4A",
+    borderLeftColor: "#4A8A4A",
+    borderRightColor: "#1A3A1A",
+    borderBottomColor: "#1A3A1A",
+    marginTop: 20,
+  },
+  startGameText: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "900",
+    textAlign: "center",
+    fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace',
+    textShadowColor: "#000",
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 0,
   },
 });
