@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Minecraft Tic-Tac-Toe",
-    "slug": "minecraft-tictactoe",
+    "name": "Tic Tac Toe and More",
+    "slug": "tictactoe-and-more",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.adhithyankr.minecrafttictactoe"
+      "bundleIdentifier": "com.adhithyankr.tictactoeandmore"
     },
     "android": {
       "adaptiveIcon": {
@@ -22,12 +22,12 @@
         "backgroundColor": "#4A4A4A"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.adhithyankr.minecrafttictactoe"
+      "package": "com.adhithyankr.tictactoeandmore"
     },
     "web": {
       "favicon": "./assets/favicon.png",
-      "name": "Minecraft Tic-Tac-Toe",
-      "shortName": "MTicTacToe"
+      "name": "Tic Tac Toe and More",
+      "shortName": "TicTacToe+"
     },
     "extra": {
       "eas": {

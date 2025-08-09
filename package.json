@@ -1,5 +1,5 @@
 {
-  "name": "minecraft-tictactoe",
+  "name": "tictactoe-and-more",
   "version": "1.0.0",
   "description": "A modern, multi-player Tic-Tac-Toe game with Minecraft-inspired design, AI opponents, and immersive sound effects",
   "main": "index.js",
