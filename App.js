@@ -8,6 +8,8 @@ import {
   Modal,
   Image,
   Platform,
+  BackHandler,
+  ScrollView,
 } from "react-native";
 import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
@@ -26,6 +28,7 @@ export default function App() {
   
   // Sound objects
   const [sounds, setSounds] = useState({});
+  const [isMuted, setIsMuted] = useState(false);
   
   // Initialize sounds
   useEffect(() => {
@@ -47,8 +50,44 @@ export default function App() {
     initializeSounds();
   }, []);
 
+  // Handle Android hardware back button
+  useEffect(() => {
+    const backAction = () => {
+      if (showGameOverModal) {
+        // Don't allow back when modal is open
+        return true;
+      }
+      
+      if (gameMode === 'playing') {
+        playSound('click');
+        setGameMode('config');
+        setWinnerInfo(null);
+        setShowGameOverModal(false);
+        return true;
+      } else if (gameMode === 'config') {
+        playSound('click');
+        setGameMode('selection');
+        setWinnerInfo(null);
+        setShowGameOverModal(false);
+        return true;
+      }
+      
+      // Let the system handle back button on selection screen (exit app)
+      return false;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction,
+    );
+
+    return () => backHandler.remove();
+  }, [gameMode, showGameOverModal]);
+
   // Play sound function using system sounds or simple beeps
   const playSound = async (soundType) => {
+    if (isMuted) return; // Skip sound if muted
+    
     try {
       // Add haptic feedback for mobile devices
       if (Platform.OS !== 'web') {
@@ -358,6 +397,15 @@ export default function App() {
     setShowGameOverModal(false);
   };
 
+  // Toggle mute function
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
+    if (!isMuted) {
+      // Play a confirmation sound when unmuting
+      playSound('click');
+    }
+  };
+
   // Handle move
   const handleMove = (index) => {
     if (board[index] || winnerInfo) return;
@@ -428,6 +476,10 @@ export default function App() {
   if (gameMode === 'selection') {
     return (
       <View style={styles.selectionContainer}>
+        <TouchableOpacity style={styles.muteButton} onPress={toggleMute}>
+          <Text style={styles.muteButtonText}>{isMuted ? '🔇' : '🔊'}</Text>
+        </TouchableOpacity>
+        
         <Text style={styles.selectionTitle}>Select Players</Text>
         
         <View style={styles.playerOptionsContainer}>
@@ -459,82 +511,88 @@ export default function App() {
   // Player Configuration Screen
   if (gameMode === 'config') {
     return (
-      <View style={styles.selectionContainer}>
+      <View style={styles.configScreenContainer}>
         <TouchableOpacity style={styles.backButton} onPress={backToSelection}>
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
         
+        <TouchableOpacity style={styles.muteButton} onPress={toggleMute}>
+          <Text style={styles.muteButtonText}>{isMuted ? '🔇' : '🔊'}</Text>
+        </TouchableOpacity>
+        
         <Text style={styles.selectionTitle}>Configure Players</Text>
         
-        <View style={styles.configContainer}>
-          {basePlayerConfigs[numPlayers].map((player, index) => (
-            <View key={index} style={styles.playerConfigCard}>
-              <View style={styles.playerConfigHeader}>
-                <Image source={player.image} style={[styles.configPlayerImage, { tintColor: player.color }]} />
-                <Text style={[styles.configPlayerText, { color: player.color }]}>
-                  {player.name}
-                </Text>
-              </View>
-              
-              <View style={styles.playerTypeContainer}>
-                <TouchableOpacity 
-                  style={[
-                    styles.playerTypeButton,
-                    !playerSettings[index]?.isAI && styles.playerTypeButtonActive
-                  ]}
-                  onPress={() => togglePlayerType(index)}
-                >
-                  <Text style={[
-                    styles.playerTypeText,
-                    !playerSettings[index]?.isAI && styles.playerTypeTextActive
-                  ]}>
-                    Human
+        <ScrollView style={styles.configScrollContainer} showsVerticalScrollIndicator={true}>
+          <View style={styles.configContainer}>
+            {basePlayerConfigs[numPlayers].map((player, index) => (
+              <View key={index} style={styles.playerConfigCard}>
+                <View style={styles.playerConfigHeader}>
+                  <Image source={player.image} style={[styles.configPlayerImage, { tintColor: player.color }]} />
+                  <Text style={[styles.configPlayerText, { color: player.color }]}>
+                    {player.name}
                   </Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={[
-                    styles.playerTypeButton,
-                    playerSettings[index]?.isAI && styles.playerTypeButtonActive
-                  ]}
-                  onPress={() => togglePlayerType(index)}
-                >
-                  <Text style={[
-                    styles.playerTypeText,
-                    playerSettings[index]?.isAI && styles.playerTypeTextActive
-                  ]}>
-                    AI
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              
-              {playerSettings[index]?.isAI && (
-                <View style={styles.aiDifficultyContainer}>
-                  <Text style={styles.difficultyLabel}>AI Difficulty:</Text>
-                  <View style={styles.difficultyButtons}>
-                    {['easy', 'medium', 'hard'].map((difficulty) => (
-                      <TouchableOpacity
-                        key={difficulty}
-                        style={[
-                          styles.difficultyButton,
-                          playerSettings[index]?.aiDifficulty === difficulty && styles.difficultyButtonActive
-                        ]}
-                        onPress={() => changeAIDifficulty(index, difficulty)}
-                      >
-                        <Text style={[
-                          styles.difficultyText,
-                          playerSettings[index]?.aiDifficulty === difficulty && styles.difficultyTextActive
-                        ]}>
-                          {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
                 </View>
-              )}
-            </View>
-          ))}
-        </View>
+                
+                <View style={styles.playerTypeContainer}>
+                  <TouchableOpacity 
+                    style={[
+                      styles.playerTypeButton,
+                      !playerSettings[index]?.isAI && styles.playerTypeButtonActive
+                    ]}
+                    onPress={() => togglePlayerType(index)}
+                  >
+                    <Text style={[
+                      styles.playerTypeText,
+                      !playerSettings[index]?.isAI && styles.playerTypeTextActive
+                    ]}>
+                      Human
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={[
+                      styles.playerTypeButton,
+                      playerSettings[index]?.isAI && styles.playerTypeButtonActive
+                    ]}
+                    onPress={() => togglePlayerType(index)}
+                  >
+                    <Text style={[
+                      styles.playerTypeText,
+                      playerSettings[index]?.isAI && styles.playerTypeTextActive
+                    ]}>
+                      AI
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                
+                {playerSettings[index]?.isAI && (
+                  <View style={styles.aiDifficultyContainer}>
+                    <Text style={styles.difficultyLabel}>AI Difficulty:</Text>
+                    <View style={styles.difficultyButtons}>
+                      {['easy', 'medium', 'hard'].map((difficulty) => (
+                        <TouchableOpacity
+                          key={difficulty}
+                          style={[
+                            styles.difficultyButton,
+                            playerSettings[index]?.aiDifficulty === difficulty && styles.difficultyButtonActive
+                          ]}
+                          onPress={() => changeAIDifficulty(index, difficulty)}
+                        >
+                          <Text style={[
+                            styles.difficultyText,
+                            playerSettings[index]?.aiDifficulty === difficulty && styles.difficultyTextActive
+                          ]}>
+                            {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                )}
+              </View>
+            ))}
+          </View>
+        </ScrollView>
         
         <TouchableOpacity style={styles.startGameButton} onPress={startGame}>
           <Text style={styles.startGameText}>Start Game</Text>
@@ -557,6 +615,13 @@ export default function App() {
       {!showGameOverModal && (
         <TouchableOpacity style={styles.backButton} onPress={backToConfig}>
           <Text style={styles.backButtonText}>← Back</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Mute Button - Hidden when modal is showing */}
+      {!showGameOverModal && (
+        <TouchableOpacity style={styles.muteButton} onPress={toggleMute}>
+          <Text style={styles.muteButtonText}>{isMuted ? '🔇' : '🔊'}</Text>
         </TouchableOpacity>
       )}
 
@@ -746,6 +811,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 24,
   },
+  configScreenContainer: {
+    flex: 1,
+    backgroundColor: "#4A4A4A",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    padding: 24,
+    paddingTop: Platform.OS === 'ios' ? 100 : 80, // Extra padding for back button
+  },
   selectionTitle: {
     fontSize: 36,
     fontWeight: "900",
@@ -817,11 +890,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 24,
-    paddingTop: Platform.OS === 'ios' ? 60 : 24,
+    paddingTop: Platform.OS === 'ios' ? 100 : 80, // Extra padding for back button
   },
   backButton: {
     position: "absolute",
-    top: Platform.OS === 'ios' ? 50 : 20,
+    top: Platform.OS === 'ios' ? 50 : 30,
     left: 20,
     backgroundColor: "#8B4513",
     paddingVertical: 8,
@@ -831,12 +904,31 @@ const styles = StyleSheet.create({
     borderLeftColor: "#B8762A",
     borderRightColor: "#5A3300",
     borderBottomColor: "#5A3300",
+    zIndex: 1000, // Ensure it's above other elements
   },
   backButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "900",
     fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace',
+  },
+  muteButton: {
+    position: "absolute",
+    top: Platform.OS === 'ios' ? 50 : 30,
+    right: 20,
+    backgroundColor: "#8B4513",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 4,
+    borderTopColor: "#B8762A",
+    borderLeftColor: "#B8762A",
+    borderRightColor: "#5A3300",
+    borderBottomColor: "#5A3300",
+    zIndex: 1000, // Ensure it's above other elements
+  },
+  muteButtonText: {
+    fontSize: 18,
+    textAlign: "center",
   },
   currentPlayerContainer: {
     flexDirection: "row",
@@ -1053,9 +1145,15 @@ const styles = StyleSheet.create({
   },
 
   // Player Configuration Styles
+  configScrollContainer: {
+    flex: 1,
+    width: "100%",
+    marginBottom: 20,
+  },
   configContainer: {
     width: "100%",
     paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   playerConfigCard: {
     backgroundColor: "#2F2F2F",
